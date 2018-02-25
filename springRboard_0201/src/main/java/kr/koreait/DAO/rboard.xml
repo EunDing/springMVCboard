@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+	spring에서 mybatis를 사용할 경우 SQL 명령을 작성하는 xml 파일의 namespace에는 반드시 mapper로 사용할
+	인터페이스의 이름을 풀 패키지 이름과 같이 적어줘야 한다.
+-->
+<mapper namespace="kr.koreait.DAO.MybatisDAO">
+<!-- 메인글을 저장한다. -->
+<insert id="insert" parameterType="kr.koreait.VO.RboardVO">
+   insert into rboard (idx, ref, lev, seq, name, password, title, content, ip, notice) 
+   values (rboard_idx_seq.nextval, rboard_idx_seq.currval, 0, 0, #{name}, #{password}, #{title}, #{content}, #{ip}, #{notice})
+</insert>
+
+<!-- 메인글 전체의 개수를 얻어온다. -->
+<select id="selectCount" resultType="int">
+	select count(*) from rboard
+</select>
+
+<!-- 공지글 목록을 얻어온다. -->
+<select id="selectNotice" resultType="kr.koreait.VO.RboardVO">
+	select * from rboard where notice = 'notice' order by idx desc
+</select>
+
+<!-- 한 페이지 분량의 메인글을 얻어온다. -->
+<select id="selectList" parameterType="java.util.HashMap" resultType="kr.koreait.VO.RboardVO">
+	<![CDATA[
+		select * from (
+			select rownum rnum, TT.* from (
+				select * from rboard order by ref desc ,seq asc
+			) TT where rownum <= #{endNo}
+		) where rnum >= #{startNo}
+	]]>
+</select>
+
+<!-- 메인 글 한 건을 얻어온다. -->
+<select id="selectByIdx" parameterType="int" resultType="kr.koreait.VO.RboardVO">
+	select * from rboard where idx = #{idx}
+</select>
+
+<update id="increment" parameterType="int">
+	update rboard set hit = hit+1 where idx=#{idx}
+</update>
+
+<!-- 메인 글 한 건을 삭제한다. -->
+<delete id="delete" parameterType="kr.koreait.VO.RboardVO">
+	<![CDATA[
+	delete from rboard where ref = #{ref} and lev > #{lev} and seq > #{seq} or idx = #{idx}
+	]]> 
+</delete>
+
+<update id="update" parameterType="kr.koreait.VO.RboardVO">
+	update rboard set title = #{title}, content = #{content}, notice = #{notice} where idx = #{idx}
+</update>
+
+<update parameterType="java.util.HashMap" id="replyIncrement">
+
+<!-- idx와 seq는 rboard 테이블의 필드이고 #{ref}와 #{seq}는 HashMap에 저장되서 넘어오는 값이다. -->
+<![CDATA[ update rboard set seq = seq + 1 where ref = #{ref} and seq >= #{seq} ]]>
+</update>
+
+<insert parameterType="kr.koreait.VO.RboardVO" id="replyInsert"> 
+	insert into rboard (idx, ref, lev, seq, name, password, title, content, ip, notice)
+	values(rboard_idx_seq.nextval, #{ref}, #{lev}, #{seq}, #{name}, #{password}, #{title}, #{content}, #{ip}, #{notice})
+</insert>
+
+<!-- 댓글 한 건을 저장한다. -->
+<insert id="insertComment" parameterType="kr.koreait.VO.RboardCommentVO">
+	insert into rboard_comment(idx, ref, name, password, content, ip) 
+	values (rboard_comment_idx_seq.nextval, #{ref}, #{name}, #{password}, #{content}, #{ip})
+</insert>
+
+<!-- 댓글 목록을 얻어온다. -->
+<select id="selectCommentList" parameterType="int" resultType="kr.koreait.VO.RboardCommentVO">
+	select * from rboard_comment where ref = #{idx} order by idx desc
+</select>
+
+ <!-- 댓글의 개수를 얻어온다. -->
+<select id="replyCount" parameterType="int" resultType="int">
+	select count(*) from rboard_comment where ref = #{idx}
+</select>
+
+
+<!-- 댓글 한 건을 얻어온다. -->
+<select id="selectCommentByIdx" parameterType="int" resultType="kr.koreait.VO.RboardCommentVO">
+	select * from rboard_comment where idx = #{idx}
+</select>
+
+<!-- 댓글 한 건을 수정한다. -->
+<update id="updateComment" parameterType="kr.koreait.VO.RboardCommentVO">
+	update rboard_comment set content=#{content} where idx=#{idx}
+</update>
+
+<!-- 댓글 한 건을 삭제한다. -->
+<delete id="deleteComment" parameterType="int">
+	delete from rboard_comment where idx = #{idx}
+</delete>
+
+</mapper>
